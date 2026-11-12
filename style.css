@@ -229,7 +229,9 @@ body {
 
 /* Shared message bubble */
 .msg {
+  min-width: 0;
   max-width: 80%;
+  width: fit-content;
   padding: 14px 18px;
   border-radius: 16px;
   line-height: 1.6;
@@ -263,6 +265,30 @@ body {
   background: #f2f0ed;
   color: #222;
   border-bottom-left-radius: 4px;
+}
+
+.msg.ai p,
+.msg.ai ul,
+.msg.ai ol {
+  margin: 0;
+}
+
+.msg.ai p + p,
+.msg.ai p + ul,
+.msg.ai p + ol,
+.msg.ai ul + p,
+.msg.ai ol + p {
+  margin-top: 12px;
+}
+
+.msg.ai ul,
+.msg.ai ol {
+  padding-left: 22px;
+}
+
+.loading-message {
+  color: #777;
+  font-style: italic;
 }
 
 /* Input row */

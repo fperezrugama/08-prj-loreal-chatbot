@@ -57,7 +57,7 @@ function addMessage(message, sender) {
 
     messageElement.append(messageLabel, messageText);
   } else {
-    messageElement.textContent = message;
+    renderAssistantMessage(messageElement, message);
   }
 
   chatWindow.appendChild(messageElement);
@@ -66,6 +66,71 @@ function addMessage(message, sender) {
   chatWindow.scrollTop = chatWindow.scrollHeight;
 
   return messageElement;
+}
+
+// Add simple Markdown formatting without inserting unsafe HTML.
+function addFormattedText(parent, text) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+
+  parts.forEach((part) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      const boldText = document.createElement("strong");
+      boldText.textContent = part.slice(2, -2);
+      parent.appendChild(boldText);
+    } else {
+      parent.appendChild(document.createTextNode(part));
+    }
+  });
+}
+
+// Turn simple Markdown-style lines into safe paragraph and list elements.
+function renderAssistantMessage(container, message) {
+  const lines = message.split(/\r?\n/);
+  let currentParagraph = null;
+  let currentList = null;
+
+  function finishBlocks() {
+    currentParagraph = null;
+    currentList = null;
+  }
+
+  lines.forEach((line) => {
+    const trimmedLine = line.trim();
+    const numberedItem = trimmedLine.match(/^\d+\.\s+(.+)/);
+    const bulletItem = trimmedLine.match(/^[-*]\s+(.+)/);
+
+    if (!trimmedLine) {
+      finishBlocks();
+      return;
+    }
+
+    if (numberedItem || bulletItem) {
+      const listType = numberedItem ? "ol" : "ul";
+      if (!currentList || currentList.tagName.toLowerCase() !== listType) {
+        currentList = document.createElement(listType);
+        container.appendChild(currentList);
+        currentParagraph = null;
+      }
+
+      const listItem = document.createElement("li");
+      addFormattedText(
+        listItem,
+        (numberedItem || bulletItem)[1]
+      );
+      currentList.appendChild(listItem);
+      return;
+    }
+
+    if (!currentParagraph) {
+      currentParagraph = document.createElement("p");
+      container.appendChild(currentParagraph);
+      currentList = null;
+    } else {
+      currentParagraph.appendChild(document.createElement("br"));
+    }
+
+    addFormattedText(currentParagraph, trimmedLine);
+  });
 }
 
 /* ==========================================
@@ -92,6 +157,7 @@ async function sendMessage(message) {
   isLoading = true;
   sendBtn.disabled = true;
   userInput.disabled = true;
+  chatWindow.setAttribute("aria-busy", "true");
 
   // Show the user's message in a chat bubble.
   addMessage(message, "user");
@@ -116,6 +182,7 @@ async function sendMessage(message) {
     "L'Oréal Assistant is thinking...",
     "ai"
   );
+  loadingMessage.classList.add("loading-message");
 
   try {
     // Send the conversation to our Cloudflare Worker.
@@ -146,8 +213,9 @@ async function sendMessage(message) {
       throw new Error("The assistant returned an empty response.");
     }
 
-    // Replace the loading message with the AI response.
-    loadingMessage.textContent = aiReply;
+    // Replace the loading message with the formatted AI response.
+    loadingMessage.replaceChildren();
+    renderAssistantMessage(loadingMessage, aiReply);
 
     // Save both successful messages in their original order.
     conversationHistory.push(userMessage);
@@ -170,6 +238,7 @@ async function sendMessage(message) {
     isLoading = false;
     sendBtn.disabled = false;
     userInput.disabled = false;
+    chatWindow.setAttribute("aria-busy", "false");
 
     // Return focus to the input field.
     userInput.focus();
