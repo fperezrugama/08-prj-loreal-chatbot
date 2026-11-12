@@ -1,18 +1,203 @@
+
+/* ==========================================
+   L'ORÉAL AI BEAUTY ASSISTANT
+   Project 8 - Chatbot with LevelUps
+========================================== */
+
+// Cloudflare Worker endpoint.
+// The OpenAI API key is stored securely in Cloudflare.
+const WORKER_URL =
+  "https://loreal-beauty-chatbot.fperezrugama.workers.dev/";
+
 /* DOM elements */
 const chatForm = document.getElementById("chatForm");
 const userInput = document.getElementById("userInput");
 const chatWindow = document.getElementById("chatWindow");
+const sendBtn = document.getElementById("sendBtn");
 
-// Set initial message
-chatWindow.textContent = "👋 Hello! How can I help you today?";
+// LevelUp 1: Store conversation history.
+// This allows the assistant to remember earlier messages.
+const conversationHistory = [];
 
-/* Handle form submit */
-chatForm.addEventListener("submit", (e) => {
-  e.preventDefault();
+// Limit the number of messages sent to the API.
+// This matches the limit configured in our Worker.
+const MAX_HISTORY = 20;
 
-  // When using Cloudflare, you'll need to POST a `messages` array in the body,
-  // and handle the response using: data.choices[0].message.content
+// Prevent multiple requests from being sent at once.
+let isLoading = false;
 
-  // Show message
-  chatWindow.innerHTML = "Connect to the OpenAI API for a response!";
+// Keep the stored conversation within the Worker's message limit.
+function trimConversationHistory() {
+  if (conversationHistory.length > MAX_HISTORY) {
+    conversationHistory.splice(
+      0,
+      conversationHistory.length - MAX_HISTORY
+    );
+  }
+}
+
+/* ==========================================
+   DISPLAY CHAT MESSAGES
+========================================== */
+
+// Create a message bubble for the user or assistant.
+function addMessage(message, sender) {
+  const messageElement = document.createElement("div");
+
+  messageElement.classList.add("msg", sender);
+
+  // Use textContent so messages are displayed safely.
+  if (sender === "user") {
+    const messageLabel = document.createElement("span");
+    messageLabel.classList.add("msg-label");
+    messageLabel.textContent = "Your question";
+
+    const messageText = document.createElement("span");
+    messageText.textContent = message;
+
+    messageElement.append(messageLabel, messageText);
+  } else {
+    messageElement.textContent = message;
+  }
+
+  chatWindow.appendChild(messageElement);
+
+  // Automatically scroll to the newest message.
+  chatWindow.scrollTop = chatWindow.scrollHeight;
+
+  return messageElement;
+}
+
+/* ==========================================
+   INITIAL WELCOME MESSAGE
+========================================== */
+
+addMessage(
+  "👋 Bonjour! Welcome to L'Oréal Beauty Assistant. " +
+  "I'm here to help you discover beauty products, " +
+  "skincare routines, makeup, haircare, and fragrances. " +
+  "How can I help you today?",
+  "ai"
+);
+
+/* ==========================================
+   SEND MESSAGE TO OPENAI VIA CLOUDFLARE
+========================================== */
+
+async function sendMessage(message) {
+  if (isLoading) {
+    return;
+  }
+
+  isLoading = true;
+  sendBtn.disabled = true;
+  userInput.disabled = true;
+
+  // Show the user's message in a chat bubble.
+  addMessage(message, "user");
+
+  // Build the request with the current message and previous messages.
+  const userMessage = {
+    role: "user",
+    content: message,
+  };
+  const messagesForRequest = [...conversationHistory, userMessage];
+
+  // Limit only this request so failed requests do not remove saved history.
+  if (messagesForRequest.length > MAX_HISTORY) {
+    messagesForRequest.splice(
+      0,
+      messagesForRequest.length - MAX_HISTORY
+    );
+  }
+
+  // Show a temporary loading message.
+  const loadingMessage = addMessage(
+    "L'Oréal Assistant is thinking...",
+    "ai"
+  );
+
+  try {
+    // Send the conversation to our Cloudflare Worker.
+    const response = await fetch(WORKER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        messages: messagesForRequest,
+      }),
+    });
+
+    // Read the JSON response.
+    const data = await response.json();
+
+    // Check whether the request succeeded.
+    if (!response.ok) {
+      throw new Error(
+        data.error || "Unable to connect to the assistant."
+      );
+    }
+
+    // Extract the AI response.
+    const aiReply = data.choices?.[0]?.message?.content;
+
+    if (!aiReply) {
+      throw new Error("The assistant returned an empty response.");
+    }
+
+    // Replace the loading message with the AI response.
+    loadingMessage.textContent = aiReply;
+
+    // Save both successful messages in their original order.
+    conversationHistory.push(userMessage);
+    conversationHistory.push({
+      role: "assistant",
+      content: aiReply,
+    });
+
+    // Keep history within the Worker limit.
+    trimConversationHistory();
+  } catch (error) {
+    console.error("Chatbot error:", error);
+
+    // Display a friendly error message.
+    loadingMessage.textContent =
+      "Sorry, I'm having trouble connecting right now. " +
+      "Please try again in a moment.";
+  } finally {
+    // Re-enable the input and send button.
+    isLoading = false;
+    sendBtn.disabled = false;
+    userInput.disabled = false;
+
+    // Return focus to the input field.
+    userInput.focus();
+
+    // Scroll to the latest response.
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
+}
+
+/* ==========================================
+   HANDLE FORM SUBMISSION
+========================================== */
+
+chatForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  // Read the message and remove extra spaces.
+  const message = userInput.value.trim();
+
+  // Do not send empty messages or duplicate requests.
+  if (!message || isLoading) {
+    return;
+  }
+
+  // Clear the input field.
+  userInput.value = "";
+
+  // Send the message to the assistant.
+  await sendMessage(message);
 });
+

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chat Assistant</title>
+    <title>L’Oréal | AI Beauty Assistant</title>
     <link
       href="https://fonts.googleapis.com/icon?family=Material+Icons"
       rel="stylesheet"
@@ -19,26 +19,51 @@
     <div class="page-wrapper">
       <!------- Header / Branding ------->
       <header class="site-header">
-        <h1 class="site-title">Smart Product Advisor</h1>
+        <img
+          class="site-logo"
+          src="img/loreal-logo.png"
+          alt="L’Oréal Paris"
+        />
+        <p class="site-title">Smart Routine &amp; Product Advisor</p>
+
+        <nav class="site-nav" aria-label="L’Oréal Paris">
+          <a href="https://www.lorealparisusa.com/">Home</a>
+          <a href="https://www.lorealparisusa.com/skin-care">Skincare</a>
+          <a href="https://www.lorealparisusa.com/makeup">Makeup</a>
+        </nav>
       </header>
 
       <!------- Chat Area ------->
       <main>
         <section class="chatbox">
-          <div id="chatWindow" class="chat-window">
-            <!-- messages will be appended here via JS -->
+          <!-- LevelUp: Conversation-style chat window -->
+          <div
+            id="chatWindow"
+            class="chat-window"
+            role="log"
+            aria-label="Chat conversation"
+            aria-live="polite"
+            aria-relevant="additions text"
+          >
+            <!-- Chat bubbles are added using JavaScript -->
           </div>
 
+          <!-- User input -->
           <form id="chatForm" class="chat-form">
-            <label for="userInput" class="visually-hidden">Message</label>
+            <label for="userInput" class="visually-hidden">
+              Message
+            </label>
+
             <input
               id="userInput"
               name="userInput"
               type="text"
-              placeholder="Ask me about products or routines…"
+              placeholder="Ask about beauty products or routines..."
               autocomplete="off"
+              maxlength="2000"
               required
             />
+
             <button type="submit" id="sendBtn">
               <span class="material-icons">send</span>
               <span class="visually-hidden">Send</span>
@@ -49,13 +74,7 @@
 
       <!------- Footer Links ------->
       <footer class="site-footer">
-        <p>&copy; 2025 Company Name. All rights reserved.</p>
-        <nav>
-          <!-- These URLs are placeholders -->
-          <a href="#">Privacy Policy</a>
-          <a href="#">Terms of Use</a>
-          <a href="#">Contact</a>
-        </nav>
+        <p>&copy; 2025 L&rsquo;Oréal. All rights reserved.</p>
       </footer>
     </div>
 
