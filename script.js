@@ -138,10 +138,9 @@ function renderAssistantMessage(container, message) {
 ========================================== */
 
 addMessage(
-  "👋 Bonjour! Welcome to L'Oréal Beauty Assistant. " +
-  "I'm here to help you discover beauty products, " +
-  "skincare routines, makeup, haircare, and fragrances. " +
-  "How can I help you today?",
+  "Bonjour! Welcome to your L’Oréal Beauty Assistant. " +
+  "I'm here to help you explore skincare, makeup, haircare, " +
+  "and beauty routines. What can I help you discover today?",
   "ai"
 );
 

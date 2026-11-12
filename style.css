@@ -132,6 +132,16 @@ body {
   margin-top: 12px;
 }
 
+.site-footer-disclaimer {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.site-footer nav span {
+  display: block;
+  margin-bottom: 6px;
+}
+
 .site-footer a {
   margin: 0 8px;
   color: #000;
