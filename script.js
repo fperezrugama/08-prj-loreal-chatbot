@@ -48,14 +48,10 @@ function addMessage(message, sender) {
 
   // Use textContent so messages are displayed safely.
   if (sender === "user") {
-    const messageLabel = document.createElement("span");
-    messageLabel.classList.add("msg-label");
-    messageLabel.textContent = "Your question";
-
     const messageText = document.createElement("span");
     messageText.textContent = message;
 
-    messageElement.append(messageLabel, messageText);
+    messageElement.appendChild(messageText);
   } else {
     renderAssistantMessage(messageElement, message);
   }
@@ -66,6 +62,29 @@ function addMessage(message, sender) {
   chatWindow.scrollTop = chatWindow.scrollHeight;
 
   return messageElement;
+}
+
+// Show the latest-question label on only the newest user message.
+function markLatestQuestion(messageElement) {
+  const previousQuestion = chatWindow.querySelector(
+    ".msg.user.latest-question"
+  );
+
+  if (previousQuestion) {
+    previousQuestion.classList.remove("latest-question");
+
+    const previousLabel = previousQuestion.querySelector(".msg-label");
+    if (previousLabel) {
+      previousLabel.remove();
+    }
+  }
+
+  messageElement.classList.add("latest-question");
+
+  const messageLabel = document.createElement("span");
+  messageLabel.classList.add("msg-label");
+  messageLabel.textContent = "LATEST QUESTION";
+  messageElement.prepend(messageLabel);
 }
 
 // Add simple Markdown formatting without inserting unsafe HTML.
@@ -159,7 +178,8 @@ async function sendMessage(message) {
   chatWindow.setAttribute("aria-busy", "true");
 
   // Show the user's message in a chat bubble.
-  addMessage(message, "user");
+  const userMessageElement = addMessage(message, "user");
+  markLatestQuestion(userMessageElement);
 
   // Build the request with the current message and previous messages.
   const userMessage = {
